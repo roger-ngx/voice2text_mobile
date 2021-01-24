@@ -23,6 +23,11 @@ import {
   DebugInstructions,
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
+
+if(__DEV__) {
+  import('./ReactotronConfig').then(() => console.log('Reactotron Configured'))
+}
+
 import AudioUploadingView from './screens/AudioUploadingView';
 
 const App: () => React$Node = () => {
