@@ -15,7 +15,7 @@ import {
   Text,
   StatusBar,
 } from 'react-native';
-
+import codePush from "react-native-code-push";
 import {
   Header,
   LearnMoreLinks,
@@ -88,4 +88,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default App;
+export default codePush(App);
