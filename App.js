@@ -29,6 +29,7 @@ if(__DEV__) {
 }
 
 import AudioUploadingView from './screens/AudioUploadingView';
+import AudioRecordingView from './screens/AudioRecordingView';
 
 const App: () => React$Node = () => {
   return (
@@ -40,7 +41,8 @@ const App: () => React$Node = () => {
           style={styles.scrollView}>
           <View style={styles.body}>
             <View style={styles.sectionContainer}>
-              <AudioUploadingView />
+              {/* <AudioUploadingView /> */}
+              <AudioRecordingView />
             </View>
           </View>
         </ScrollView>

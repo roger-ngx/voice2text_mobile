@@ -3,16 +3,50 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native
 import LottieView from 'lottie-react-native';
 import { Icon } from 'react-native-elements';
 import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
+import { Audio } from 'expo-av';
 
 let timer = null;
 
 const AudioUploadingView = () => {
 
     const [ recordingTime, setRecordingTime ] = useState(0);
-    const [ isRecording, setRecording ] = useState();
+
+    const [recording, setRecording] = React.useState();
+
+    async function startRecording() {
+        try {
+        console.log('Requesting permissions..');
+        await Audio.requestPermissionsAsync();
+        await Audio.setAudioModeAsync({
+            allowsRecordingIOS: true,
+            playsInSilentModeIOS: true,
+            interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
+            staysActiveInBackground: true,
+            interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
+            shouldDuckAndroid: true,
+            playThroughEarpieceAndroid: true
+        });
+        console.log('Starting recording..');
+        const recording = new Audio.Recording();
+        await recording.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
+        await recording.startAsync(); 
+        setRecording(recording);
+        console.log('Recording started');
+        } catch (err) {
+        console.error('Failed to start recording', err);
+        }
+    }
+
+    async function stopRecording() {
+        console.log('Stopping recording..');
+        setRecording(undefined);
+        await recording.stopAndUnloadAsync();
+        const uri = recording.getURI(); 
+        console.log('Recording stopped and stored at', uri);
+    }
 
     useEffect(() => {
-        if(isRecording){
+        if(recording){
             setRecordingTime(0);
 
             checkPermissionAndoRecord();
@@ -26,7 +60,7 @@ const AudioUploadingView = () => {
 
         // return timer & clearInterval(timer);
 
-    }, [isRecording]);
+    }, [recording]);
 
     const checkPermissionAndoRecord = () => {
         const micPermission = Platform.OS === 'ios' ?  PERMISSIONS.IOS.MICROPHONE : PERMISSIONS.ANDROID.MICROPHONE;
@@ -58,10 +92,10 @@ const AudioUploadingView = () => {
         </Text>
         
         {
-            !isRecording &&
+            !recording &&
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => setRecording(true)}
+                onPress={startRecording}
             >
                 <Icon
                     name='mic'
@@ -74,10 +108,10 @@ const AudioUploadingView = () => {
         }
 
         {
-            isRecording &&
+            recording &&
             <TouchableOpacity
                 style={styles.buttonSecondary}
-                onPress={() => setRecording(false)}
+                onPress={stopRecording}
             >
                 <Icon
                     name='stop-circle'
