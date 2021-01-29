@@ -31,7 +31,7 @@ const AudioUploadingView = () => {
             });
 
             setTimeout(() => {
-                console.log(file.uri);
+                console.log(file);
                 const uri = file.uri;
                 if(uri){
                     const split = uri.split('/');
