@@ -119,7 +119,8 @@ const AudioUploadingView = () => {
             if(uri){
                 const body = {
                     name: 'just a name',
-                    uri : Platform.OS === "android" ? uri : uri.replace("file://", "")
+                    uri : Platform.OS === "android" ? uri : uri.replace("file://", ""),
+                    type: 'audio/vnd.wave' // This is important for Android!!
                 };
 
                 const formData = new FormData();
