@@ -4,14 +4,33 @@ import LottieView from 'lottie-react-native';
 import { Icon } from 'react-native-elements';
 import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 import { Audio } from 'expo-av';
-import RNFS from 'react-native-fs';
 import { cloneDeep } from 'lodash';
 
 const SERVER_URL = 'http://183.96.253.147:8052';
 // const SERVER_URL = 'http://10.10.20.75:8052';
 // const SERVER_URL = 'http://192.168.200.185:8052';
 
-let timer = null;
+const RECORDING_OPTIONS_PRESET_HIGH_QUALITY = {
+    android: {
+      extension: '.wav',
+      outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_MPEG_4,
+      audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AAC,
+      sampleRate: 16000,
+      numberOfChannels: 1,
+      bitRate: 128000,
+    },
+    ios: {
+      extension: '.wav',
+      audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_MAX,
+      outputFormat: Audio.RECORDING_OPTION_IOS_OUTPUT_FORMAT_LINEARPCM,
+      sampleRate: 16000,
+      numberOfChannels: 1,
+      bitRate: 128000,
+      linearPCMBitDepth: 16,
+      linearPCMIsBigEndian: false,
+      linearPCMIsFloat: false,
+    },
+  };
 
 const AudioUploadingView = () => {
 
@@ -35,10 +54,7 @@ const AudioUploadingView = () => {
             console.log('Starting recording..');
             const recording = new Audio.Recording();
 
-            const options = cloneDeep(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
-            options.ios.extension = '.wav';
-
-            await recording.prepareToRecordAsync(options);
+            await recording.prepareToRecordAsync(RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
 
             recording.setOnRecordingStatusUpdate(status => {
                 const millis = status.durationMillis;
@@ -66,23 +82,6 @@ const AudioUploadingView = () => {
         console.log('Recording stopped and stored at', uri);
     }
 
-    // useEffect(() => {
-    //     if(recording){
-    //         setRecordingTime(0);
-
-    //         checkPermissionAndoRecord();
-
-    //         timer = setInterval(() => {
-    //             setRecordingTime(recordingTime => recordingTime + 1);
-    //         }, 1000);
-    //     }else{
-    //         timer && clearInterval(timer);
-    //     }
-
-    //     // return timer & clearInterval(timer);
-
-    // }, [recording]);
-
     const checkPermissionAndoRecord = () => {
         const micPermission = Platform.OS === 'ios' ?  PERMISSIONS.IOS.MICROPHONE : PERMISSIONS.ANDROID.MICROPHONE;
         check(micPermission).then(result => {
@@ -100,25 +99,31 @@ const AudioUploadingView = () => {
         });
     };
 
-    const uploadBegin = (response) => {
-        const jobId = response.jobId;
-        console.log('UPLOAD HAS BEGUN! JobId: ' + jobId);
-    };
-
-    const uploadProgress = (response) => {
-        const percentage = Math.floor((response.totalBytesSent/response.totalBytesExpectedToSend) * 100);
-        console.log('UPLOAD IS ' + percentage + '% DONE!');
-    };
-
+    function urlToBlob(url) {
+        return new Promise((resolve, reject) => {
+            var xhr = new XMLHttpRequest();
+            xhr.onerror = reject;
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4) {
+                    resolve(xhr.response);
+                }
+            };
+            xhr.open('GET', url);
+            xhr.responseType = 'blob'; // convert type
+            xhr.send();
+        });
+    }
 
     const requestForText = async(uri) => {
         try{
             if(uri){
-                const response = await fetch(uri);
-                const blob = await response.blob();
+                const body = {
+                    name: 'just a name',
+                    uri : Platform.OS === "android" ? uri : uri.replace("file://", "")
+                };
 
                 const formData = new FormData();
-                formData.append('file', blob.data);
+                formData.append('file', body);
                 formData.append('name', new Date().getTime().toString());
 
                 fetch(SERVER_URL + '/upload/file', {
@@ -144,7 +149,7 @@ const AudioUploadingView = () => {
             autoPlay
             loop
         />
-        <Text style={{fontSize: 24, fontWeight: 'bold', color: 'purple', marginBottom: 12}}>InstaPlayer</Text>
+        <Text style={{fontSize: 24, fontWeight: 'bold', color: 'purple', marginBottom: 12}}>InstaRecorder</Text>
         <Text style={{fontSize: 16, marginBottom: 4}}>
             {recordingTime}
         </Text>
@@ -181,7 +186,7 @@ const AudioUploadingView = () => {
             </TouchableOpacity>
         }
 
-        <Text  style={{fontSize: 16, marginBottom: 4, marginTop: 24}}>00:00:00 / 00:00:00</Text>
+        {/* <Text  style={{fontSize: 16, marginBottom: 4, marginTop: 24}}>00:00:00 / 00:00:00</Text>
         <TouchableOpacity style={styles.button}>
             <Icon
                 name='play-arrow'
@@ -208,7 +213,7 @@ const AudioUploadingView = () => {
                 style={{marginRight: 8}}
             />
             <Text style={styles.buttonSecondaryTxt}>stop</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
     </View>)
 }
 

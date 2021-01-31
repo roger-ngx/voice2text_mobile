@@ -1,5 +1,6 @@
 package com.mobile;
 
+import com.mobile.generated.BasePackageList;
 import android.app.Application;
 import android.content.Context;
 import com.facebook.react.PackageList;
@@ -10,8 +11,17 @@ import com.facebook.react.ReactPackage;
 import com.facebook.soloader.SoLoader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import com.microsoft.codepush.react.CodePush;
+import java.util.Arrays;
+
+import org.unimodules.adapters.react.ModuleRegistryAdapter;
+import org.unimodules.adapters.react.ReactModuleRegistryProvider;
+import org.unimodules.core.interfaces.SingletonModule;
+import com.oblador.vectoricons.VectorIconsPackage;
 
 public class MainApplication extends Application implements ReactApplication {
+
+    private final ReactModuleRegistryProvider mModuleRegistryProvider = new ReactModuleRegistryProvider(new BasePackageList().getPackageList(), null);
 
   private final ReactNativeHost mReactNativeHost =
       new ReactNativeHost(this) {
@@ -26,8 +36,23 @@ public class MainApplication extends Application implements ReactApplication {
           List<ReactPackage> packages = new PackageList(this).getPackages();
           // Packages that cannot be autolinked yet can be added manually here, for example:
           // packages.add(new MyReactNativePackage());
+
+            // Add unimodules
+            List<ReactPackage> unimodules = Arrays.<ReactPackage>asList(
+                    new ModuleRegistryAdapter(mModuleRegistryProvider)
+            );
+            packages.addAll(unimodules);
+
           return packages;
         }
+
+          // 2. Override the getJSBundleFile method in order to let
+          // the CodePush runtime determine where to get the JS
+          // bundle location from on each app start
+          @Override
+          protected String getJSBundleFile() {
+              return CodePush.getJSBundleFile();
+          }
 
         @Override
         protected String getJSMainModuleName() {
