@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, ScrollView } from 'react-native';
 import LottieView from 'lottie-react-native';
 import { Icon } from 'react-native-elements';
 import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 import { Audio } from 'expo-av';
-import { cloneDeep } from 'lodash';
+import { map, isEmpty } from 'lodash';
 
 const SERVER_URL = 'http://183.96.253.147:8052';
 // const SERVER_URL = 'http://10.10.20.75:8052';
@@ -12,23 +12,22 @@ const SERVER_URL = 'http://183.96.253.147:8052';
 
 const RECORDING_OPTIONS_PRESET_HIGH_QUALITY = {
     android: {
-      extension: '.wav',
-      outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_MPEG_4,
-      audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AAC,
-      sampleRate: 16000,
-      numberOfChannels: 1,
-      bitRate: 128000,
+        extension: '.m4a',
+        outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_MPEG_4,
+        audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AAC,
+        sampleRate: 44100,
+        numberOfChannels: 1,
+        bitRate: 128000,
     },
     ios: {
-      extension: '.wav',
-      audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_MAX,
-      outputFormat: Audio.RECORDING_OPTION_IOS_OUTPUT_FORMAT_LINEARPCM,
-      sampleRate: 16000,
-      numberOfChannels: 1,
-      bitRate: 128000,
-      linearPCMBitDepth: 16,
-      linearPCMIsBigEndian: false,
-      linearPCMIsFloat: false,
+        extension: '.wav',
+        audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_HIGH,
+        sampleRate: 44100,
+        numberOfChannels: 1,
+        bitRate: 128000,
+        linearPCMBitDepth: 16,
+        linearPCMIsBigEndian: false,
+        linearPCMIsFloat: false,
     },
   };
 
@@ -37,9 +36,12 @@ const AudioUploadingView = () => {
     const [ recordingTime, setRecordingTime ] = useState(0);
 
     const [recording, setRecording] = React.useState();
+    const [transcriptions, setTranscriptions] = useState([]);
 
     async function startRecording() {
         try {
+            setTranscriptions([]);
+
             console.log('Requesting permissions..');
             await Audio.requestPermissionsAsync();
             await Audio.setAudioModeAsync({
@@ -117,15 +119,18 @@ const AudioUploadingView = () => {
     const requestForText = async(uri) => {
         try{
             if(uri){
+                setTranscriptions(['Please wait...']);
+
                 const body = {
                     name: 'just a name',
                     uri : Platform.OS === "android" ? uri : uri.replace("file://", ""),
-                    type: 'audio/vnd.wave' // This is important for Android!!
+                    type: 'audio/x-wav' // This is important for Android!!
                 };
 
                 const formData = new FormData();
                 formData.append('file', body);
                 formData.append('name', new Date().getTime().toString());
+
 
                 fetch(SERVER_URL + '/upload/file', {
                     method: 'POST',
@@ -134,12 +139,16 @@ const AudioUploadingView = () => {
                 })
                 .then(res => res.json())
                 .then(data => {
-                    console.log(data);
+                    if(data){
+                        console.log(data.transcription);
+                        isEmpty(data.transcription) ? setTranscriptions(['No response. Please blame on a backend guy or try again']) : setTranscriptions(data.transcription);
+                    }
                 })
-                .catch(console.log);
+                .catch(err => setTranscriptions(['No response. Server error']));
             }
         }catch(err){
             console.log(err);
+            setTranscriptions(['Somthing wrond. Please try again']);
         }
     };
 
@@ -186,6 +195,12 @@ const AudioUploadingView = () => {
                 <Text style={styles.buttonSecondaryTxt}>stop</Text>
             </TouchableOpacity>
         }
+
+        <ScrollView contentContainerStyle={{flex: 1}}>
+            {
+                map(transcriptions, transcription => <Text key={transcription}>{transcription}</Text>)
+            }
+        </ScrollView>
 
         {/* <Text  style={{fontSize: 16, marginBottom: 4, marginTop: 24}}>00:00:00 / 00:00:00</Text>
         <TouchableOpacity style={styles.button}>
